@@ -37,7 +37,7 @@ class GetAccountViewSet(GenericViewSet, ListModelMixin):
             return Account.objects.filter(account_number=account_number)
 
         phone_number = self.request.query_params.get(
-            'phone_number', '').replace(' ', '')
+            'phone_number', '').replace(' ', '')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
         if phone_number:
             return Account.objects.filter(user__profile__phone_number__icontains=phone_number)
 
@@ -73,7 +73,7 @@ class ValidatePinCodeViewSet(ViewSet):
 
     def list(self,request,*args,**kwargs):
 
-        pin_code = request.request.get('pin_code',None)
+        pin_code = request.query_params.get('pin_code',None)
 
         if not pin_code:
             return Response({'success':False,'message':'The pin code must be passed in the post data'},status=404)
@@ -296,7 +296,7 @@ class WithdrawMoneyViewSet(CreateModelMixin, ListModelMixin, GenericViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer_class()
 
-        return Response({'success': True, 'data': serializer(queryset, many=True)})
+        return Response({'success': True, 'data': serializer(queryset, many=True).data})
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -342,7 +342,7 @@ class ConfirmWithdraw(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, Gene
 
     def get_queryset(self):
         # n represents the amount of minutes for a withdrawal to be accepted or cancel after that it will be rejected
-        n = settings.WITHDRAW_MONEY_MrespresentsINUTES
+        n = settings.WITHDRAW_MONEY_MINUTES
         dt = datetime.datetime  # dt respresents the datetime.datetime function
         td = datetime.timedelta  # td represents the datetime.timedelta function
         now = dt.now()

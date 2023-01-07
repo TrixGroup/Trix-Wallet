@@ -11,6 +11,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons'
 
 import TransactionNavigator from './TransactionStack'
 
+
 const Tab = createBottomTabNavigator()
 
 const AppNavigator = () => {
@@ -29,7 +30,7 @@ const AppNavigator = () => {
       <Tab.Screen name="Notification" component={NotificationStack} options={{
         title: "Notifications",
         tabBarLabel: "Notifications",
-        tabBarBadge:3,
+        tabBarBadge:0,
         tabBarIcon: ({ color, size }) => (
           <Ionicons name="notifications" color={color} size={size} />
         ),
