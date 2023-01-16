@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState,useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext'
 import React from 'react';
 import APIService from '../utils/ApiService'
+
+import { useLanguageContext } from '../context/LangContext';
 
 import WebSocket from 'ws';
 
@@ -12,6 +14,8 @@ export const AuthProvider = (props) => {
     const [token, setToken] = useState(null)
     const [isLoading, setIsLoading] = useState(true);
     const [isAgent, setIsAgent] = useState(false);
+
+    const { setLocale } = useLanguageContext()
 
     // const ws = useRef(null);
 
@@ -30,7 +34,7 @@ export const AuthProvider = (props) => {
     //         });
 
     //     }
-        
+
 
     // }, [userInfo])
 
@@ -50,7 +54,9 @@ export const AuthProvider = (props) => {
                 setUserInfo(JSON.parse(userData))
             }
         }
-        getToken().then(() => getUserData())
+        getToken().then(() => {
+            getUserData().then(()=>{});
+        })
     }, [])
 
     useEffect(() => {
@@ -62,12 +68,24 @@ export const AuthProvider = (props) => {
         if (token) {
             setUserToken(token)
         }
+        // else if(token === null){
+        //     AsyncStorage.removeItem('token').then(()=>{
+                
+        //         AsyncStorage.removeItem("userInfo").then(()=>{
+        //             setUserInfo(null)
+        //         })
+        //     })
+        // }
     }, [token])
 
     useEffect(() => {
         async function setUserData() {
             if (userInfo) {
                 await AsyncStorage.setItem('userInfo', JSON.stringify(userInfo))
+                if(userInfo){
+                    // console.log("user info : ",userInfo);
+                    setLocale(userInfo?.lang?.toLocaleLowerCase() || 'en')
+                }
             }
         }
         setUserData(userInfo)
@@ -99,14 +117,18 @@ export const AuthProvider = (props) => {
     const logout = async () => {
         if (token) {
             await AsyncStorage.removeItem('token')
-            await APIService.logout(token)
             setToken(null);
             setIsLoading(false)
+            // APIService.logout(token).then(res => { }).catch(err => console.log(err)).finally(() => {
+            // })
         }
+        await AsyncStorage.clear();
+        setToken(null);
+        setUserInfo(null)
     }
 
     return (
-        <AuthContext.Provider value={{isAgent, setIsAgent, userInfo: userInfo, setUserInfo, token, setToken, login, logout, isLoading, setIsLoading }}>{children}</AuthContext.Provider>
+        <AuthContext.Provider value={{ isAgent, setIsAgent, userInfo: userInfo, setUserInfo, token, setToken, login, logout, isLoading, setIsLoading }}>{children}</AuthContext.Provider>
     )
 
 

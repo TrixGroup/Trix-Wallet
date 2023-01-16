@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View, SafeAreaView, NativeModules, ScrollView, FlatList, TouchableOpacity,Alert } from 'react-native'
-import React, { useState,useEffect } from 'react'
+import { StyleSheet, Text, View, SafeAreaView, NativeModules, RefreshControl, ActivityIndicator, FlatList, TouchableOpacity, Alert } from 'react-native'
+import React, { useState, useEffect } from 'react'
 
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
+// import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import { COLORS } from '../../utils/constants'
 import { AntDesign } from '@expo/vector-icons';
 
@@ -11,7 +11,7 @@ import ApiService from "../../utils/ApiService"
 
 import Notification from '../../components/Notification'
 
-import {useAuthContext} from '../../context/AuthContext'
+import { useAuthContext } from '../../context/AuthContext'
 
 import moment from 'moment'
 
@@ -20,62 +20,50 @@ const { StatusBarManager } = NativeModules
 
 moment.locale('en')
 
-const messages = [
-  {
-    id: 1,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  },
-  {
-    id: 2,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  }
-  ,
-  {
-    id: 3,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  },
-  {
-    id: 4,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  },
-  {
-    id: 5,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  },
-  {
-    id: 6,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  },
-  {
-    id: 7,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  },
-  {
-    id: 8,
-    message: 'Helsadfasd asdkjaskdjasdhkajsd nlorem ipsum dole asdasdasdasd asdasdasd',
-  }
-]
-
-
 const NotificationScreen = ({ navigation }) => {
 
   const [selectedNotification, setSelectedNotification] = useState([])
 
-  const [messages,setMessages] = useState([])
+  const [messages, setMessages] = useState([])
 
-  const {token} = useAuthContext();
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
+  const [refreshing, setRefreshing] = useState(false);
+
+ 
+
+  const { token } = useAuthContext();
+
+  useEffect(() => {
     ApiService
-    .getNotifications(token)
-    .then(res=>res.json())
-    .then(data=>{
-      // console.log(data)
-      setMessages(data.data)
+      .getNotifications(token)
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data.data)
+        setLoading(false);
+      })
+      .catch(err => {
+        console.log(err)
+        setLoading(false);
+      })
+  }, []);
 
-    })
-    .catch(err=>console.log(err))
-  },[]);
+  const onRefresh = React.useCallback(()=>{
+    setRefreshing(true);
+    ApiService
+      .getNotifications(token)
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data.data)
+        setLoading(false);
+        setRefreshing(false)
+      })
+      .catch(err => {
+        console.log(err)
+        setLoading(false);
+        setRefreshing(false)
+      })
+  });
 
   const selectNotification = (notification) => {
     console.log(notification)
@@ -91,7 +79,7 @@ const NotificationScreen = ({ navigation }) => {
     if (selectedNotification?.length) {
       return selectNotification(notification)
     }
-    navigation.navigate('NotificationDetail',{notification})
+    navigation.navigate('NotificationDetail', { notification })
   }
 
   const getSelected = (notification) => {
@@ -118,21 +106,41 @@ const NotificationScreen = ({ navigation }) => {
           text: 'Yes',
           onPress: () => {
             selectedNotification?.map((id) => {
-             
-            ApiService.deleteNotifications(id, token).then(() => {
-              console.log('Deleted ')
-            }).catch((error) => console.log(error))
 
-              
+              ApiService.deleteNotifications(id, token).then(() => {
+                console.log('Deleted ')
+
+                const filteredNotifications = messages.filter((msg)=>msg.id !== id);
+  
+                setMessages(filteredNotifications);
+  
+                // const unDeleted = selectedNotification.filter((notId)=>id!==notId);
+                // setSelectedNotification(unDeleted);
+  
+              }).catch((error) => console.log(error))
+
             })
+            setSelectedNotification([]);
+
+
           }
         }
       ]);
   }
 
-  const isEmpty= () => selectedNotification?.length === 0
+  const isEmpty = () => selectedNotification?.length === 0
 
-  console.log(selectedNotification)
+  if (loading) {
+    return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
+      <ActivityIndicator size={'large'} color={COLORS.blue} />
+    </View>
+  }
+
+  const NoMessage = () => {
+    return <View style={{ paddingVertical: 20, alignSelf: 'center',width:'100%',alignItems:'center',justifyContent:'center' }}>
+      <Text style={{ fontSize: 20,fontWeight:'700',borderWidth:1,padding:20,width:'80%',borderRadius:3 }}>No Notifications</Text>
+    </View>
+  }
 
   return (
     <SafeAreaView style={{
@@ -141,13 +149,15 @@ const NotificationScreen = ({ navigation }) => {
     }}
     >
       <View style={{ flex: 1, marginTop: 10, paddingHorizontal: 8 }}>
-        <Text style={{ fontSize: 22, fontWeight: '800', marginVertical: 8 }}>Notifications</Text>
+        <Text style={{ fontSize: 25, fontWeight: '800', marginVertical: 8 }}>Notifications</Text>
+        {messages.length == 0 && <NoMessage />}
         <FlatList
           data={messages}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
             <Notification item={item} selected={getSelected(item)} onLongPress={selectNotification} onPress={openNotification} />
           )}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
         {!isEmpty() && <FAB icon={'delete'} onPress={deleteMultipleNotifications} style={{ ...styles.fab, backgroundColor: COLORS.orange }} />}
 
@@ -160,7 +170,8 @@ export default NotificationScreen
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
+    backgroundColor: COLORS.bg
   },
   notification: {
     // flexDirection: 'row',

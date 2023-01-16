@@ -32,6 +32,9 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
 
   const [loading,setLoading] = useState(false)
 
+  useEffect(()=>{
+    navigation.setOptions({ headerTitle: i18n.t('Confirm Transaction'), })
+  },[])
 
   useEffect(()=>{
     APIService
@@ -51,10 +54,6 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
   const handleChangePinCode = (value) => {
     setPinCode(value.replace(/[^0-9]/g, ''))
   }
-
-  // const goNext = () =>{
-  //   navigation.navigate('SuccessTransactionScreen')
-  // }
 
   const validatePinCode = () =>{
     setLoading(true);
@@ -76,17 +75,20 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
           .then(data=>{
             console.log(data)
             if(data.success){
-              navigation.navigate('SuccessTransactionScreen',{data,type})
+              navigation.navigate('SuccessTransactionScreen',{data:data,type:type})
+              setLoading(false);
             }
             else{
               setError(data.message)
               setModalVisible(true)
+              setLoading(false);
             }
           })
           .catch(err=>{
             console.error(err)
             setError(err.message)
             setModalVisible(true)
+            setLoading(false);
           })
         }
 
@@ -102,7 +104,7 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
           .then(data=>{
             console.log(data)
             if(data.success){
-              navigation.navigate('SuccessTransactionScreen',{data,type})
+              navigation.navigate('SuccessTransactionScreen',{data:data,type:type})
             }
             else{
               setError(data.message)
@@ -128,7 +130,7 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
           .then(data=>{
             console.log(data)
             if(data.success){
-              navigation.navigate('SuccessTransactionScreen',{data,type})
+              navigation.navigate('SuccessTransactionScreen',{data:data,type:type})
             }
             else{
               setError(data.message)
@@ -187,7 +189,7 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
             <Text style={styles.text}>{i18n.t('reciever')} : {account.user.full_name}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={styles.text}>{i18n.t('amount')} : {i18n.numberToCurrency(amount,{unit:'XAF '})}</Text>
-              <Text style={styles.text}>Charges : {i18n.numberToPercentage(charge*100,{precision: 0,format:'%n %'})}</Text>
+              <Text style={styles.text}>{i18n.t('charges')} : {i18n.numberToPercentage(charge*100,{precision: 0,format:'%n %'})}</Text>
             </View>
             <View>
               <Text style={styles.text}>{i18n.t('amountSend')} : {i18n.numberToCurrency(amountToSend,{unit:'XAF '})}</Text>
@@ -198,13 +200,13 @@ const ConfirmTransactionScreen = ({ navigation, route }) => {
               value={pinCode}
               onChangeText={handleChangePinCode}
               style={styles.input}
-              placeholder={'Pin Code'}
+              placeholder={i18n.t('pinCode')}
               maxLength={5}
               keyboardType={'numeric'}
               secureTextEntry
 
             />
-            <CustomButton disabled={Boolean(pinCode.length != 5)} onPress={validatePinCode} title='Confirm' style={{ color: '#fff' }} />
+            <CustomButton loading={loading} disabled={Boolean(pinCode.length != 5)} onPress={validatePinCode} title='Confirm' style={{ color: '#fff' }} />
           </View>
         </View>
       </TouchableWithoutFeedback>

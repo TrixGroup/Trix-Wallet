@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard, TextInput } from 'react-native'
-import React,{useState} from 'react'
+import React,{useEffect, useState} from 'react'
 
 import { Formik } from "formik";
 
@@ -17,6 +17,10 @@ const TransactionAmountScreen = ({ navigation, route }) => {
     const {i18n} = useLanguageContext()
 
     const [amount,setAmount] = useState(0)
+
+    useEffect(()=>{
+        navigation.setOptions({ headerTitle: i18n.t('Transaction Amount'), })
+    },[])
 
     return (
         <Formik 
@@ -57,7 +61,7 @@ const TransactionAmountScreen = ({ navigation, route }) => {
                                     <Text style={{ fontSize: 12,fontWeight:'900', color: 'red', paddingLeft: 8 }}>{errors.amount}</Text>
                                 }
                             </View>
-                            <CustomButton style={{color:'white'}} title={'Send'} onPress={handleSubmit} disabled={Boolean(!isValid || !dirty)}/>
+                            <CustomButton style={{color:'white'}} title={'Continue'} onPress={handleSubmit} disabled={Boolean(!isValid || !dirty)}/>
                         </View>
                     </View>
                 </TouchableWithoutFeedback>

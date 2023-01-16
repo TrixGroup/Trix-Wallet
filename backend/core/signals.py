@@ -3,6 +3,8 @@ from django.db.models.signals import post_save, pre_save
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import get_user_model
 
+import binascii,os
+
 from django.db import transaction
 
 from .models import Account, Transfer, Withdraw, TransactionType, Deposit
@@ -36,27 +38,29 @@ def createAccount(sender, instance, created, **kwargs):
 
     if created:
         # it means when the user is created
-
+        # if not Profile.objects.filter(user=instance):
+        #     profile = Profile.objects.create(
+        #         user=instance, dob=timezone.now().date())
         if not Account.objects.select_related('user').filter(user=instance).exists():
-            Account.objects.create(user=instance)
+            account = Account.objects.create(user=instance,account_number=0000000)
+            account.account_number = 1000000 + account.id
+            account.save()
         if not Token.objects.filter(user=instance).exists():
             Token.objects.create(user=instance)
-        if not Profile.objects.filter(user=instance):
-            profile = Profile.objects.create(
-                user=instance, dob=timezone.now().date())
-        else:
-            profile = Profile.objects.select_related(
-                'profile').get(user=instance)
 
-        lang = profile.lang
-        msg = ''
+        # else:
+        #     profile = Profile.objects.select_related(
+        #         'profile').get(user=instance)
 
-        if lang == 'FR':
-            msg = f'Bienvenu sur {settings.APP_NAME}\nVotre code pin est [00000] et solde de votre compte est {profile.user.account.currency} {profile.user.account.balance}'
-        elif lang == 'EN':
-            msg = f'Welcome To {settings.APP_NAME} \nYour pin code is [00000] and account balance is {profile.user.account.currency} {profile.user.account.balance}'
+        # lang = profile.lang
+        # msg = ''
 
-        Notification.objects.create(user=profile.user, message=msg)
+        # if lang == 'FR':
+        #     msg = f'Bienvenu sur {settings.APP_NAME}\nVotre code pin est [00000] et solde de votre compte est {profile.user.account.currency} {profile.user.account.balance}'
+        # elif lang == 'EN':
+        #     msg = f'Welcome To {settings.APP_NAME} \nYour pin code is [00000] and account balance is {profile.user.account.currency} {profile.user.account.balance}'
+
+        # Notification.objects.create(user=profile.user, message=msg)
 
 
 @receiver(pre_save, sender=Profile)
@@ -76,15 +80,6 @@ def passThroughProfile(sender, instance, *args, **kwargs):
                     msg = f'The language of your account have been changed from {previous.lang} to {instance.lang}'
 
                 Notification.objects.create(user=instance.user, message=msg)
-
-
-@receiver(post_save, sender=Account)
-def createAccountNumber(sender, instance, created, **kwargs):
-
-    if created:
-
-        instance.account_number = str(1000000 + instance.id)
-        instance.save()
 
 
 @receiver(pre_save, sender=Account)
@@ -323,7 +318,6 @@ def accept_or_deny(sender, instance, **kwargs):
 
                     instance.charge = charge
 
-
             else:
                 instance.status = state.WITHDRAW_REJECTED
 
@@ -383,7 +377,7 @@ def checkIfUserCanWithdrawMoney(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Withdraw)
-def sendNotificationToUser(sender,created,instance,**kwargs):
+def sendNotificationToUser(sender, created, instance, **kwargs):
 
     if instance.state == state.WITHDRAW_ACCEPTED:
 
@@ -395,17 +389,18 @@ def sendNotificationToUser(sender,created,instance,**kwargs):
 
         chrg = instance.charge.charge * 100
 
-        amt_receive = float(instance.amount) - float(instance.charge.charge * float(instance.amount))
+        amt_receive = float(instance.amount) - \
+            float(instance.charge.charge * float(instance.amount))
 
         # this is the message that will be recieve by the withdraw_from(sender) acount
         if lang == 'EN':
             sender_msg = f'The withdrawal of {instance.currency} {instance.amount} from your account {instance.agent.account_number} by {instance.agent.user.first_name} {instance.agent.user.last_name} [{instance.agent.user}] has been authorize'
             sender_msg += f'\nYou have successfully send {instance.currency} {amt_receive} to account number {instance.agent.account_number} {instance.agent.user.get_full_name()}. Transaction code : {instance.code} amount : {instance.currency} {instance.amount} charge : {chrg} %'
-            # sender_msg += f'\nYou have recieve {instance.currency} {amt_receive} from {instance.withdraw_from.user.get_full_name()} Transaction code : {instance.code} amount : {instance.currency} {instance.amount} charge : {chrg} %'    
+            # sender_msg += f'\nYou have recieve {instance.currency} {amt_receive} from {instance.withdraw_from.user.get_full_name()} Transaction code : {instance.code} amount : {instance.currency} {instance.amount} charge : {chrg} %'
         elif lang == 'FR':
             sender_msg = f'La demande de retrait de {instance.currency} {instance.amount} de votre compte {instance.agent.account_number} par {instance.agent.user.first_name} {instance.agent.user.last_name} [{instance.agent.user}] a ete authoriser'
             sender_msg += f'\nVous avez envoyer {instance.currency} {amt_receive} au compte {instance.agent.account_number} {instance.agent.user.get_full_name()} avec succès. code de transaction : {instance.code} montant : {instance.currency} {instance.amount} frais : {chrg} %'
-        
+
         # This is the message that will be recieve by the agent account
         if lang1 == 'EN':
             receiver_msg = f'The withdrawal of {instance.currency} {instance.amount} from the account {instance.withdraw_from.account_number} {instance.withdraw_from.user.first_name} {instance.withdraw_from.user.last_name} [{instance.withdraw_from.user}] has been authorize'
@@ -413,7 +408,6 @@ def sendNotificationToUser(sender,created,instance,**kwargs):
         elif lang1 == 'FR':
             receiver_msg = f'Le retrait de  {instance.currency} {instance.amount} du compte {instance.withdraw_from.account_number} {instance.withdraw_from.user.first_name} {instance.withdraw_from.user.last_name} [{instance.withdraw_from.user}] a ete authoriser'
             receiver_msg += f'\nVous avez recus {instance.currency} {amt_receive} du compte {instance.withdraw_from.account_number} {instance.withdraw_from.user.get_full_name()}.code de transaction: {instance.code} montant : {instance.currency} {instance.amount} frais : {chrg} %'
-
 
         Notification.objects.create(
             user=instance.withdraw_from.user,

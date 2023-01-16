@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, TextInput, TouchableWithoutFeedback, Keyboard } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Formik } from "formik";
 
 import CustomButton from '../../components/CustomButton'
@@ -18,10 +18,14 @@ const EnterPhoneNumberScreen = ({ navigation,route }) => {
 
     const [phoneNumber, setPhoneNumber] = useState('')
     const {token} = useAuthContext();
+    const [loading,setLoading] = useState(false);
 
     const {i18n} = useLanguageContext()
-    console.log(route)
     const {type} = route.params
+
+    useEffect(()=>{
+        navigation.setOptions({ headerTitle: i18n.t('phoneNumber'), })
+    },[])
 
     const getText = ()=>{
         if(type==='Transfer' || type==='Deposit'){
@@ -31,19 +35,18 @@ const EnterPhoneNumberScreen = ({ navigation,route }) => {
             return 'phoneNumber'
         }
     }
-
-    // const getText = () => "recieverPhone"
-
+    
     return (
         <Formik
             initialValues={{ phoneNumber: '' }}
             validationSchema={PhoneSchema}
             onSubmit={(values) => {
-
+                setLoading(true);
                 APIService
                 .getAccountInfo('phone_number',values.phoneNumber,token)
                 .then(res=>res.json())
                 .then(data=>{
+                    setLoading(false);
                     navigation.navigate('TransactionAmount', { type:type,account: data.data, phoneNumber: values.phoneNumber })
                 })
 
@@ -63,7 +66,7 @@ const EnterPhoneNumberScreen = ({ navigation,route }) => {
                         <Text style={{ fontSize: 18, color: 'ligthgrey' }}>{i18n.t('pleaseEnterPhoneNumber')}</Text>
                         <View style={{ flex: 1 }}>
                             <View style={{ marginVertical: 20 }}>
-                                <Text style={{ fontSize: 23, marginBottom: 8 }}>{i18n.t(getText())}</Text>
+                                <Text style={{ fontSize: 18, marginBottom: 8 }}>{i18n.t(getText())}</Text>
                                 <View style={{ borderRadius: 5, flexDirection: 'row', width: '100%', justifyContent: 'flex-start', alignItems: 'center', borderWidth: 1, paddingHorizontal: 5 }}>
                                     <Feather name="hash" size={16} style={{ color: '#000', width: '5%' }} />
                                     <TextInput 
@@ -81,7 +84,7 @@ const EnterPhoneNumberScreen = ({ navigation,route }) => {
                                 }
                             </View>
                             <View>
-                                <CustomButton title={i18n.t('continue')} onPress={handleSubmit} disabled={Boolean(!isValid || !dirty)} style={{ color: 'white', backgroundColor: 'black' }} />
+                                <CustomButton loading={loading} title={i18n.t('continue')} onPress={handleSubmit} disabled={Boolean(!isValid || !dirty || loading)} style={{ color: 'white', backgroundColor: 'black' }} />
                             </View>
                         </View>
                         <Fab onPress={()=>navigation.replace('Transaction')} iconSize={15} iconName="left" style={{backgroundColor:'#4361ee',color:'#fff',borderRadius:10}}/>

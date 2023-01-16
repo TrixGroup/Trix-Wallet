@@ -7,8 +7,8 @@ from django.core.exceptions import ValidationError
 
 from django.utils.translation import gettext_lazy as _
 
-from django.conf import settings
 
+from django.conf import settings
 import uuid
 import binascii
 import os
@@ -25,8 +25,7 @@ class Account(models.Model):
                 ('LAK', 'LAK'), ('LBP', 'LBP'), ('LKR', 'LKR'), ('LRD', 'LRD'), ('LSL', 'LSL'), ('LYD', 'LYD'), ('MAD', 'MAD'), ('MDL', 'MDL'), ('MGA', 'MGA'), ('MKD', 'MKD'), ('MMK', 'MMK'), ('MNT', 'MNT'), ('MOP', 'MOP'), ('MRU', 'MRU'), ('MUR', 'MUR'), ('MVR', 'MVR'), ('MWK', 'MWK'), ('MXN', 'MXN'), ('MYR', 'MYR'), ('MZN', 'MZN'), ('NAD', 'NAD'), ('NGN', 'NGN'), ('NIO', 'NIO'), ('NOK', 'NOK'), ('NPR', 'NPR'), ('NZD', 'NZD'), ('OMR', 'OMR'), ('PAB', 'PAB'), ('PEN', 'PEN'), ('PGK', 'PGK'), ('PHP', 'PHP'), ('PKR', 'PKR'), ('PLN', 'PLN'), ('PYG', 'PYG'), ('QAR', 'QAR'), ('RON', 'RON'), ('RSD', 'RSD'), ('RUB', 'RUB'), ('RWF', 'RWF'), ('SAR', 'SAR'), ('SBD', 'SBD'), ('SCR', 'SCR'), ('SDG', 'SDG'), ('SEK', 'SEK'), ('SGD', 'SGD'), ('SHP', 'SHP'), ('SLE', 'SLE'), ('SLL', 'SLL'), ('SOS', 'SOS'), ('SRD', 'SRD'), ('SSP', 'SSP'), ('STN', 'STN'), ('SYP', 'SYP'), ('SZL', 'SZL'), ('THB', 'THB'), ('TJS', 'TJS'), ('TMT', 'TMT'), ('TND', 'TND'), ('TOP', 'TOP'), ('TRY', 'TRY'), ('TTD', 'TTD'), ('TVD', 'TVD'), ('TWD', 'TWD'), ('TZS', 'TZS'), ('UAH', 'UAH'), ('UGX', 'UGX'), ('UYU', 'UYU'), ('UZS', 'UZS'), ('VES', 'VES'), ('VND', 'VND'), ('VUV', 'VUV'), ('WST', 'WST'), ('XAF', 'XAF'), ('XCD', 'XCD'), ('XDR', 'XDR'), ('XOF', 'XOF'), ('XPF', 'XPF'), ('YER', 'YER'), ('ZAR', 'ZAR'), ('ZMW', 'ZMW'), ('ZWL', 'ZWL')]
 
     STATUS = (('active', 'active'), ('inactive', 'inactive'))
-    account_number = models.CharField(
-        default='1000000',max_length=40, unique=True)
+    account_number = models.IntegerField(blank=True,null=True)
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, help_text='user id', related_name='account')
     balance = models.FloatField(
@@ -171,6 +170,9 @@ class Transfer(Transaction):
 
         return {'sender_message': sender_message, 'reciever_message': reciever_message}
 
+    class Meta:
+        ordering = ['-created_at']
+
 
 class Withdraw(Transaction):
 
@@ -207,6 +209,9 @@ class Withdraw(Transaction):
                 raise ValidationError({'withdraw_from': _(
                     "You can't withdraw money from the account the account balance is insufficent")})
 
+    class Meta:
+        ordering = ['-created_at']
+
 
 class Deposit(Transaction):
 
@@ -221,6 +226,9 @@ class Deposit(Transaction):
                                  related_name='reciever_account', help_text='the reciever account id')
     status = models.CharField(
         max_length=20, choices=DEPOSIT_STATE, default='SUCCESSFULL')
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Deposit {self.code} {self.status}"

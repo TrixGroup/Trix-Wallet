@@ -63,9 +63,11 @@ class CreateProfileViewSet(CreateModelMixin, GenericViewSet):
 
         serializer.is_valid(raise_exception=True)
 
-        serializer.save()
+        instance = serializer.save()
 
-        return Response({'success':True,'data':serializer.data,'message':'Welcome to trix wallet'},status=status.HTTP_201_CREATED)
+        token = instance.user.auth_token.key
+
+        return Response({'success':True,'token':token,'data':serializer.data,'message':'Welcome to trix wallet'},status=status.HTTP_201_CREATED)
 
 
 class ProfileViewSet(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
@@ -74,18 +76,25 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, Destr
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
-        if self.request.method.upper() in ['GET']:
+        if self.request.method.upper() in ['GET','PATCH']:
             return ProfileListSerializer
         return ProfileSerializer
 
     def get_queryset(self):
         return Profile.objects.filter(user=self.request.user)
 
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        serializer = ProfileListSerializer(instance=self.get_object())
+        serializer.update(self.get_object(),request.data)
+        return Response({'success':True,'data':serializer.data,'message':'Your profile has been updated'})
+ 
     def retrieve(self,request,*args,**kwargs):
         serializer = self.get_serializer_class()
         pk = kwargs.get('pk')
         queryset = self.get_queryset().filter(pk=pk)
-        print(queryset)
         if queryset:
             return Response({'success':True,'data':serializer(queryset.first()).data,'message':'Your profile'})
         return Response({'success':False,'data':[],'message':'Not Found'},status=status.HTTP_400_BAD_REQUEST)

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 
 import environ
+import os
 # Initialise environment variables
 env = environ.Env()
 environ.Env.read_env()
@@ -102,6 +103,8 @@ ASGI_APPLICATION = 'backend.asgi.application'
 # Database
 # https: // docs.djangoproject.com/en/4.1/ref/settings/  # databases
 
+# Sqlite 3 database
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -127,6 +130,54 @@ DATABASES = {
 #         }
 #     }
 # }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'byxbnbk4wcicbpcwpzld',
+#         'USER': 'ufssjdgv3hdwxgfk',
+#         'PASSWORD': 's4VM87fRQcgdLtLBLQrm',
+#         'HOST': 'byxbnbk4wcicbpcwpzld-mysql.services.clever-cloud.com',
+#         'PORT': '3306',
+#         # 'OPTIONS': {
+#         #     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+#         # }
+#     }
+# }
+
+# https://www.freemysqlhosting.net/account/
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': ' 	sql11589869',
+#         'USER': ' 	sql11589869',
+#         'PASSWORD': '4B5uMA9FLS',
+#         'HOST': 'sql11.freemysqlhosting.net',
+#         'PORT': '3306',
+#         # 'OPTIONS': {
+#         #     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+#         # }
+#     }
+# }
+
+# Postgresql Database           
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'bagqrggpzfzwo2drvayv',
+#         'USER': 'uxfcfpasbtwkua6iasoa',
+#         'PASSWORD': 'CeiELumenUp25L0BEhMW',
+#         'HOST': 'bagqrggpzfzwo2drvayv-postgresql.services.clever-cloud.com'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ,
+#         'PORT': '6575',
+#         # 'OPTIONS': {
+#         #     'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+#         # }
+#     }
+# }
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -167,7 +218,10 @@ STATICFILES_DIRS = [
     BASE_DIR/'static/'
 ]
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles_build', 'static')
+
 MEDIA_URL = 'images/'
+
 
 
 # Default primary key field type
@@ -233,27 +287,25 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # With Redis
 
-if not DEBUG:
-
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": ["redis://localhost:6379/0"]
-                # "hosts": [("127.0.0.1", 6379)],
-            },
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": ["redis://redis:6379/0"]
+            # "hosts": [("127.0.0.1", 6379)],
         },
-    }
+    },
+}
 
 
 # With internal memoryChannelLayer
-if DEBUG:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND":
-            "channels.layers.InMemoryChannelLayer",
-        }
-    }
+# if DEBUG:
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND":
+#         "channels.layers.InMemoryChannelLayer",
+#     }
+# }
 
 
 # Crispy configurations
@@ -268,7 +320,7 @@ APP_NAME = 'TrixWallet'  # this is the name i gaved to my backend system app
 
 # -------------- Withdraw minutes valid ---------------
 
-WITHDRAW_MONEY_MINUTES = 2
+WITHDRAW_MONEY_MINUTES = 3
 
 WALLET_DEFAULT_PIN_CODE = '00000'
 

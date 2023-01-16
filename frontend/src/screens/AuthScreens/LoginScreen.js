@@ -11,47 +11,83 @@ import {
   TouchableWithoutFeedback,
   Keyboard
 } from "react-native";
-import React, { useState } from "react";
+
+import React, { useState,useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { ScrollView } from "react-native-gesture-handler";
-import { Button } from "react-native-paper";
-import { COLORS } from "../../utils/constants";
+import { Button, Snackbar } from 'react-native-paper';
+
+import { Feather } from "@expo/vector-icons";
 
 const { StatusBarManager } = NativeModules;
 
 import { useAuthContext } from '../../context/AuthContext'
 import CustomButton from "../../components/CustomButton";
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation,route }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("")
-  const { testLogin ,login,setToken,setUserInfo} = useAuthContext()
+  const { login, setToken, setUserInfo } = useAuthContext()
+  const [loading,setLoading] = useState(false);
+  const [visible, setVisible] = React.useState(false);
+
+  const onToggleSnackBar = () => setVisible(!visible);
+
+  const onDismissSnackBar = () => setVisible(false);
+  const [message,setMessage] = useState('');
+
+  useEffect(()=>{
+    setError(null);
+  },[username,password]);
+
+  useEffect(()=>{
+    if(message){
+      setVisible(true)
+    }
+  },[message]);
+
+  useEffect(()=>{
+    if(route){
+      if(route.params){
+        setMessage(route.params.message);
+      }
+    }
+  },[]);
 
   const handleSubmit = () => {
-    if (!username && !password){
+    console.log(username,password);
+    if (!username && !password) {
       return setError('username and password required')
     }
-    else if(!username){
-     return  setError('username  required')
+    else if (!username) {
+      return setError('username  required')
     }
-    else if(!password){
+    else if (!password) {
       return setError('password required');
     }
-    console.log('username ',username)
-    console.log('password',password)
-    login(username,password)
-    .then(res=>res.json())
-    .then((data)=>{
-      console.log('Response ',data);
-      setToken(data.token);
-      setUserInfo(data.data)
+    setLoading(true);
+    login(username, password)
+      .then(res => res.json())
+      .then((data) => {
+        console.log('Response ', data);
+        if(data.success){
+          setToken(data.token);
+          setUserInfo(data.data)
+        }
+        else{
+          setError(data.message);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.log(err.message);
+        setError(err.message);
+        setLoading(false)
+      })
+  };
 
-    })
-    .catch(err=>console.log('Error ',err))
-   };
-
-  return (  
+  return (
     <SafeAreaView
       style={{
         ...styles.container,
@@ -71,19 +107,22 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.wrapper}>
             <View>
 
-              <Text style={styles.title}>Login</Text>
               <Image
                 source={require("../../images/logo.png")}
                 style={styles.logo}
               />
+              <Text style={styles.title}>Login</Text>
             </View>
-            {error && <Text style={{ color: 'red' }}>{error}</Text>}
+            {error && <View style={{justifyContent:'space-between',alignItems:'center',flexDirection:'row',backgroundColor:'rgb(166,89,89)', padding:10,borderRadius:5}}>
+              <Feather size={18} color={'#fff'} name="alert-triangle"/>
+              <Text style={{color: '#fff',marginLeft:9,fontSize:18}}>{error}</Text>
+            </View> }
             <View style={styles.inputContainer}>
               <Text style={styles.label}>username</Text>
               <TextInput
                 style={styles.input}
                 value={username}
-                onChangeText={(text) => setUsername(text)}
+                onChangeText={(text) => setUsername(text.trim().replace(/[^A-Za-z0-9]/g,''))}
               />
             </View>
             <View style={styles.inputContainer}>
@@ -96,9 +135,8 @@ const LoginScreen = ({ navigation }) => {
               />
             </View>
 
-            <CustomButton title="Login" onPress={handleSubmit} disabled={Boolean(!username || !password)} style={{color:'#fff'}}/>
+            <CustomButton loading={loading} title="Login" onPress={handleSubmit} disabled={Boolean(!username || !password || loading)} style={{ color: '#fff' }} />
 
-            <Button onPress={() => testLogin()}>Test Me</Button>
             <View style={styles.inputContainer}>
               <TouchableOpacity style={{ ...styles.btn, color: (!username) ? 'grey' : 'default' }}>
                 <Button
@@ -117,7 +155,22 @@ const LoginScreen = ({ navigation }) => {
                 Register
               </Text>
             </Text>
+            <Snackbar
+            visible={visible}
+            onDismiss={() => setVisible(false)}
+            action={{
+              label: 'Ok',
+              onPress: () => {
+                // Do something
+              },
+            }}
+            style={{backgroundColor: "lightgreen"}}
+          >
+            <View><Text style={{color:'#fff',padding:8,fontSize:20}}>{message}</Text></View>
+          </Snackbar>
           </View>
+          
+          {/* <SnackBar visible={true} textMessage="Hello There!" actionHandler={()=>{console.log("snackbar button clicked!")}} actionText="let's go"/> */}
         </TouchableWithoutFeedback>
       </ScrollView>
     </SafeAreaView>
@@ -139,7 +192,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 25,
-    fontWeight: "900",
+    fontWeight: "400",
     textAlign: "center",
   },
   wrapper: {
@@ -156,7 +209,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 19,
     paddingVertical: 8,
-    // fontWeight: "600",
   },
   input: {
     width: "100%",
@@ -166,7 +218,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.6)",
     borderRadius: 3,
     fontSize: 18,
-    fontWeight:'800',
+    fontWeight: '400',
     backgroundColor: '#e3dede96'
   },
   btn: {
@@ -176,5 +228,6 @@ const styles = StyleSheet.create({
   },
   text: {
     textAlign: "center",
+    fontSize:19
   },
 });

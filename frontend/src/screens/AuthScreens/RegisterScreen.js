@@ -5,25 +5,31 @@ import {
   View,
   NativeModules,
   ScrollView,
-  Pressable,
-  TouchableOpacity,
-  TouchableHighlight,
+  Alert
 } from "react-native";
 
-import React from "react";
+import React,{useState} from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Formik } from "formik";
 import { COLORS } from "../../utils/constants";
-import { Button } from "react-native-paper";
 
 import CustomButton from "../../components/CustomButton";
 
 import { basicSchema } from '../../schema/UserSchema'
 
+import ApiService from '../../utils/ApiService'
+
+import { useAuthContext } from '../../context/AuthContext'
+
 const { StatusBarManager } = NativeModules;
 
+
 const RegisterScreen = ({ navigation }) => {
+
+  const { setToken, setUserInfo } = useAuthContext()
+  const [loading,setLoading] = useState(false);
+
   return (
     <SafeAreaView
       style={{
@@ -43,7 +49,40 @@ const RegisterScreen = ({ navigation }) => {
             confirm_password: "",
           }}
           validationSchema={basicSchema}
-          onSubmit={(values) => console.log(values)}
+          onSubmit={(values) => {
+            setLoading(true);
+            const { username, first_name, last_name, email, phone_number, password } = values;
+            
+            const user = {
+              username, first_name, last_name, email, password
+            }
+            const profile = { phone_number,user }
+
+            const data = JSON.stringify(user)
+            console.log(data);
+            ApiService.register(profile)
+              .then(res => res.json())
+              .then(data => {
+                console.log(data);
+                if(data.success){
+                  navigation.navigate('Login',{message:data.message})
+                }
+                else{
+                  Alert.alert("Could not create account",'Something went wrong',[
+                    {
+                    text: 'Ok',
+                    onPress: () => {
+                      
+                    },
+                  },
+                  ])
+                }
+              })
+              .catch(err=>console.log(err))
+              .finally(()=>setLoading(false))
+
+            console.log(values)
+          }}
         >
           {({
             handleChange,
@@ -82,7 +121,7 @@ const RegisterScreen = ({ navigation }) => {
                   onChangeText={handleChange("first_name")}
                   onBlur={handleBlur("first_name")}
                   value={values.first_name}
-                  secureTextEntry
+                  keyboardType="default"
                 />
                 {(errors.first_name && touched.first_name) &&
                   <Text style={{ fontSize: 10, color: 'red', paddingLeft: 8 }}>{errors.first_name}</Text>
@@ -96,6 +135,7 @@ const RegisterScreen = ({ navigation }) => {
                   style={styles.textInput}
                   onChangeText={handleChange("last_name")}
                   onBlur={handleBlur("last_name")}
+                  keyboardType="default"
                   value={values.last_name}
                 />
                 {(errors.last_name && touched.last_name) &&
@@ -111,6 +151,7 @@ const RegisterScreen = ({ navigation }) => {
                   onChangeText={handleChange("email")}
                   onBlur={handleBlur("email")}
                   value={values.email}
+                  keyboardType="email-address"
                 />
                 {(errors.email && touched.email) &&
                   <Text style={{ fontSize: 10, color: 'red', paddingLeft: 8 }}>{errors.email}</Text>
@@ -164,17 +205,18 @@ const RegisterScreen = ({ navigation }) => {
 
               <View style={styles.btnContainer}>
 
-                {/* <TouchableOpacity disabled={Boolean(!isValid || !dirty)}>
-                  <Button  mode="contained" labelStyle={{ color: "white", fontSize: 18 }} style={{ backgroundColor: (!isValid || !dirty)?'grey':COLORS.green, borderRadius: 5 }}>
-                    Sign Up
-                  </Button>
-                </TouchableOpacity> */}
+                <CustomButton 
+                  loading={loading} 
+                  onPress={handleSubmit} 
+                  disabled={Boolean(!isValid || !dirty)} 
+                  title={'Sign Up'} 
+                  style={{ color: 'white', backgroundColor: COLORS.green }} 
 
-                <CustomButton disabled={Boolean(!isValid || !dirty)} title={'Sign Up'} style={{ color: 'white', backgroundColor: COLORS.green }} />
+                />
 
 
               </View>
-              <Text style={{ textAlign: "center", marginBottom: 20 }}>
+              <Text style={{ textAlign: "center", marginVertical: 20,fontSize:19 }}>
                 Already a user ?{" "}
                 <Text
                   style={{ color: "blue" }}

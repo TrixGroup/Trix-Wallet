@@ -224,9 +224,11 @@ class WithdrawListSerializer(WithdrawSerializer):
 
 	sender = serializers.SerializerMethodField()
 	reciever = serializers.SerializerMethodField()
+	status = serializers.SerializerMethodField()
 
-	# withdraw_from = AccountListSerializer()
-	# agent= AccountListSerializer()
+	withdraw_from = AccountListSerializer()
+	agent= AccountListSerializer()
+
 	charge = TransactionListChargeSerializer()
 
 	def get_sender(self,obj:Withdraw):
@@ -243,6 +245,9 @@ class WithdrawListSerializer(WithdrawSerializer):
 			fields.pop(field,None)
 
 		return fields
+
+	def get_status(self,obj:Withdraw):
+		return obj.state
 
 	class Meta:
 		model = Withdraw
@@ -290,11 +295,15 @@ class DepositSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 	
 
-class DepositListSerializer(DepositSerializer):
+class DepositListSerializer(serializers.ModelSerializer):
 	
 	sender = AccountListSerializer()
 	reciever = AccountListSerializer()
 	charge = TransactionListChargeSerializer()
+
+	class Meta:
+		model = Deposit
+		fields = '__all__'
 
 class ConvertCurrencySerializer(serializers.Serializer):
 
